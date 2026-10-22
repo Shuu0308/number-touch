@@ -534,6 +534,9 @@ HTML = r"""
         }
     }
 
+    const rankingPeriod = document.getElementById("ranking-period");
+    const rankingSize = document.getElementById("ranking-size");
+    
     async function loadRecords() {
         try {
             const params = new URLSearchParams({period: rankingPeriod.value, size: rankingSize.value});
