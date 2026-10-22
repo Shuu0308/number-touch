@@ -536,6 +536,7 @@ HTML = r"""
 
     const rankingPeriod = document.getElementById("ranking-period");
     const rankingSize = document.getElementById("ranking-size");
+    const playerNameInput = document.getElementById("player-name");
     
     async function loadRecords() {
         try {
