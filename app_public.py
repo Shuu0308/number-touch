@@ -484,22 +484,6 @@ HTML = r"""
     });
 }
 
-        board.innerHTML = "";
-        board.style.gridTemplateColumns = `repeat(${getSize()}, minmax(0, 1fr))`;
-        boardButtons = [];
-
-        numbers.forEach(number => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "cell";
-            button.textContent = number;
-            button.setAttribute("aria-label", `数字 ${number}`);
-            button.disabled = true;
-            button.addEventListener("click", () => handleNumberClick(number, button));
-            board.appendChild(button);
-            boardButtons.push(button);
-        });
-    }
 
     function resetGame() {
         stopTimers();
