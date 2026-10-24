@@ -342,6 +342,7 @@ HTML = r"""
     const countLabel = document.getElementById("count-label");
 
     let nextNumber = 1;
+    let eraOrder = [];
     let gameState = "ready"; // ready, countdown, playing, finished
     let startTime = 0;
     let elapsedBeforeFinish = 0;
@@ -430,14 +431,58 @@ HTML = r"""
     }
 
     function createBoard() {
-        const total = getTotal();
-        const numbers = Array.from({ length: total }, (_, i) => i + 1);
+    const isEraMode = gameMode.value === "eras";
+    const total = isEraMode ? 25 : getTotal();
 
-        // Fisher–Yates シャッフル：数字の順番をランダムにする
-        for (let i = numbers.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-        }
+    const items = isEraMode
+        ? eras.slice()
+        : Array.from({ length: total }, (_, i) => i + 1);
+
+    if (isEraMode) {
+        items.sort(() => Math.random() - 0.5);
+        items.splice(25);
+        eraOrder = items.slice().sort(
+            (a, b) => eras.indexOf(a) - eras.indexOf(b)
+        );
+    }
+
+    // 元号モードでは25個をランダムに選ぶ
+    if (isEraMode) {
+        items.sort(() => Math.random() - 0.5);
+        items.splice(25);
+    }
+
+    // 表示順をシャッフルする
+    for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    board.innerHTML = "";
+    board.style.gridTemplateColumns =
+        `repeat(${isEraMode ? 5 : getSize()}, minmax(0, 1fr))`;
+    boardButtons = [];
+
+    items.forEach(item => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "cell";
+        button.textContent = item;
+        button.setAttribute("aria-label", String(item));
+        button.disabled = true;
+
+        button.addEventListener("click", () => {
+            if (isEraMode) {
+                handleEraClick(item, button);
+            } else {
+                handleNumberClick(item, button);
+            }
+        });
+
+        board.appendChild(button);
+        boardButtons.push(button);
+    });
+}
 
         board.innerHTML = "";
         board.style.gridTemplateColumns = `repeat(${getSize()}, minmax(0, 1fr))`;
@@ -483,7 +528,8 @@ HTML = r"""
         nextNumber = 1;
         elapsedBeforeFinish = 0;
         penaltySeconds = Number(penaltySelect.value);
-        nextDisplay.textContent = "1";
+        nextDisplay.textContent =
+    　　    gameMode.value === "eras" ? eraOrder[0] : "1";
         timeDisplay.textContent = "0.00";
         message.textContent = "カウントダウン中...";
         startButton.textContent = "▶ カウント中";
@@ -516,7 +562,9 @@ HTML = r"""
         elapsedBeforeFinish = 0;
         setBoardEnabled(true);
         startButton.textContent = "▶ プレイ中";
-        message.textContent = "1から順番にタッチ！";
+        message.textContent = gameMode.value === "eras"
+            ? "古い元号から順番にタッチ！"
+            : "1から順番にタッチ！";
         tickTimer = setInterval(updateTime, 20);
     }
 
@@ -549,6 +597,52 @@ HTML = r"""
         }
     }
 
+    function handleEraClick(era, button) {
+    if (gameState !== "playing") return;
+
+    const expectedEra = eraOrder[nextNumber - 1];
+
+    if (era === expectedEra) {
+        button.classList.add("done");
+        button.disabled = true;
+        nextNumber++;
+        nextDisplay.textContent = nextNumber > eraOrder.length
+            ? "完了"
+            : eraOrder[nextNumber - 1];
+        playCorrectSound();
+
+        if (nextNumber > eraOrder.length) {
+            finishEraGame();
+        } else {
+            message.textContent =
+                `正解！ 次は「${eraOrder[nextNumber - 1]}」 ✨`;
+        }
+    } else {
+        playWrongSound();
+        elapsedBeforeFinish += penaltySeconds;
+        startTime -= penaltySeconds * 1000;
+        button.classList.add("wrong");
+        message.textContent = penaltySeconds > 0
+            ? `順番が違うよ！ ＋${penaltySeconds}秒のペナルティ 😵`
+            : "順番が違うよ！ 古い元号から探そう 😵";
+        setTimeout(() => button.classList.remove("wrong"), 220);
+        updateTime();
+    }
+}
+
+    function finishEraGame() {
+    stopTimers();
+    gameState = "finished";
+    elapsedBeforeFinish = (Date.now() - startTime) / 1000;
+    timeDisplay.textContent = elapsedBeforeFinish.toFixed(2);
+    setBoardEnabled(false);
+    startButton.textContent = "▶ もう一度遊ぶ";
+    message.textContent =
+        `🎉 元号タッチクリア！ ${elapsedBeforeFinish.toFixed(2)} 秒！`;
+    playClearSound();
+    shareButton.disabled = true;
+}
+    
     async function finishGame() {
         stopTimers();
         gameState = "finished";
@@ -696,6 +790,7 @@ HTML = r"""
     playerNameInput.value = localStorage.getItem("numberTouchPlayerName") || "";
     playerNameInput.addEventListener("change", () => localStorage.setItem("numberTouchPlayerName", playerNameInput.value.trim().slice(0, 16)));
     difficulty.addEventListener("change", resetGame);
+    gameMode.addEventListener("change", resetGame);
     penaltySelect.addEventListener("change", () => {
         if (gameState === "ready") {
             penaltySeconds = Number(penaltySelect.value);
