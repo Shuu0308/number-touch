@@ -180,9 +180,8 @@ HTML = r"""
 <body>
 <div class="app">
     <header>
-        <span class="eyebrow">QUICK • FOCUS • FUN</span>
         <h1><span class="rainbow">数字タッチ！</span> ✨</h1>
-        <p>数字を見つけて、1から順番にタッチしよう！</p>
+        <p id="instruction">数字を見つけて、1から順番にタッチしよう！</p>
     </header>
 
     <main>
@@ -273,6 +272,7 @@ HTML = r"""
     const board = document.getElementById("board");
     const difficulty = document.getElementById("difficulty");
     const gameMode = document.getElementById("game-mode");
+    const instruction = document.getElementById("instruction");
     const eras = [
     "大化", "白雉", "朱鳥", "大宝", "慶雲", "和銅",
     "霊亀", "養老", "神亀", "天平", "天平感宝",
@@ -495,6 +495,9 @@ HTML = r"""
         nextDisplay.textContent = "1";
         timeDisplay.textContent = "0.00";
         message.textContent = "スタートを押して挑戦しよう！";
+        instruction.textContent = gameMode.value === "eras"
+            ? "古い元号から順番にタッチしよう！"
+            : "数字を見つけて、1から順番にタッチしよう！";
         startButton.textContent = "▶ スタート";
         shareButton.disabled = true;
         lastResult = null;
@@ -785,7 +788,6 @@ HTML = r"""
 
 
 def get_connection():
-    """DATABASE_URL があれば PostgreSQL、なければローカルの SQLite を使う。"""
     database_url = os.environ.get("DATABASE_URL", "").strip()
     if database_url:
         import psycopg2
@@ -905,7 +907,6 @@ def save_record():
         return jsonify({"error": "ニックネームを入力してください。"}), 400
     if size not in (3, 4, 5):
         return jsonify({"error": "難易度が正しくありません。"}), 400
-    # 速すぎる記録や異常値を簡易的に拒否（本格的な不正対策ではありません）
     minimum_time = {3: 1.0, 4: 2.0, 5: 3.0}[size]
     if game_time < minimum_time or game_time > 3600:
         return jsonify({"error": "タイムが不正です。もう一度プレイしてください。"}), 400
