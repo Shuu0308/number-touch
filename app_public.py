@@ -8,7 +8,6 @@ import os
 
 app = Flask(__name__)
 
-# 記録ファイルは app.py と同じフォルダに作成されます。
 DATA_FILE = Path(__file__).with_name("records.sqlite3")
 
 HTML = r"""
@@ -406,7 +405,6 @@ HTML = r"""
             oscillator.start();
             oscillator.stop(audioContext.currentTime + duration);
         } catch (error) {
-            // 音声が使えないブラウザでは、ゲーム自体はそのまま遊べます。
         }
     }
 
@@ -446,13 +444,13 @@ HTML = r"""
         );
     }
 
-    // 元号モードでは25個をランダムに選ぶ
+    // 元号モードでは25個をランダムに
     if (isEraMode) {
         items.sort(() => Math.random() - 0.5);
         items.splice(25);
     }
 
-    // 表示順をシャッフルする
+    // 表示順シャッフル
     for (let i = items.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [items[i], items[j]] = [items[j], items[i]];
@@ -570,7 +568,6 @@ HTML = r"""
         } else {
             playWrongSound();
             elapsedBeforeFinish += penaltySeconds;
-            // プレイ中の実時間にペナルティを加算するため、開始時刻を調整する
             startTime -= penaltySeconds * 1000;
             button.classList.add("wrong");
             message.textContent = penaltySeconds > 0
@@ -692,7 +689,6 @@ HTML = r"""
 
     function updateBestDisplay(bests = null) {
         if (bests === null) {
-            // 記録は loadRecords() が取得し、表示を更新します。
             return;
         }
         const value = bests[String(getSize())];
@@ -926,5 +922,4 @@ def save_record():
 init_db()
 
 if __name__ == "__main__":
-    # ローカル確認用。公開時はホスティングサービスの起動コマンドを使用します。
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=False)
